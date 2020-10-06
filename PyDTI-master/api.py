@@ -1,4 +1,5 @@
 
+
 import os
 import sys
 import time
@@ -17,7 +18,6 @@ from new_pairs import novel_prediction_analysis
 
 def main(argv):
     try:
-        print(argv)
         opts, args = getopt.getopt(argv, "m:d:f:c:s:o:n:p", ["method=", "dataset=", "data-dir=", "cvs=", "specify-arg=", "method-options=", "predict-num=", "output-dir=", ])
     except getopt.GetoptError:
         sys.exit()
@@ -125,5 +125,54 @@ def main(argv):
             new_dti_file = os.path.join(output_dir, "_".join([method, dataset, "new_dti.txt"]))
             novel_prediction_analysis(predict_pairs, new_dti_file, os.path.join(data_dir, 'biodb'))
 
-if __name__ == "__main__":
-    main(sys.argv[1:])
+
+import os
+from typing import Optional
+import uvicorn
+from fastapi import FastAPI
+
+app = FastAPI()
+
+
+@app.get("/")
+def read_root(
+        method: str=None,
+        dataset: str=None,
+        folder: Optional[str] = None,
+        data_dir: Optional[str] = os.path.join(os.path.pardir, 'data'),
+        output_dir: Optional[str] = os.path.join(os.path.pardir, 'output'),
+        csv: Optional[int] = 1,
+        sp_arg: Optional[int] = 1,
+        model_settings: Optional[str] = None,
+        predict_num: Optional[int] = 0,
+):
+    cmd = ""
+
+    try:
+        if method:
+            cmd += "--method=\"{}\" ".format(method)
+        if dataset:
+            cmd += "--dataset=\"{}\" ".format(dataset)
+        if data_dir:
+            cmd += "--data-dir=\"{}\" ".format(data_dir)
+        if csv is not 1:
+            cmd += "--cvs={} ".format(csv)
+        if sp_arg:
+            cmd += "--specify-arg={} ".format(sp_arg)
+        if model_settings:
+            cmd += "--method-options=\"{}\" ".format(model_settings)
+        if predict_num:
+            cmd += "--predict-num={} ".format(predict_num)
+        if output_dir:
+            cmd += "--output-dir=\"{}\" ".format(output_dir)
+        print(cmd)
+        main(cmd)
+    except Exception as e:
+        print(e)
+        pass
+
+
+    return None
+
+
+uvicorn.run(app=app)
